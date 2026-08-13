@@ -84,7 +84,8 @@
         
         <!-- Bottom Controls -->
         <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-40">
-            <button onclick="showScreen('camera')" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform border-2 border-zinc-600">
+            <!-- UPDATED RETAKE BUTTON -->
+            <button onclick="showScreen('camera'); executeCaptureSequence();" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform border-2 border-zinc-600">
                 RETAKE
             </button>
             <button onclick="saveFinalPhoto()" class="px-14 py-5 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-[0_10px_30px_rgba(22,163,74,0.5)] active:scale-95 transition-transform border-4 border-green-400">
@@ -247,12 +248,12 @@
         }
 
         // --- OVERLAY LOADER ---
-        function loadOverlayImage() {
+        function loadOverlayImage(mode) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => resolve(img);
-                img.onerror = () => resolve(null); // Returns null if border.png is missing
-                img.src = 'border.png';
+                img.onerror = () => resolve(null); // Returns null if the file is missing
+                img.src = `border${mode}.png`; // Dynamically requests border1.png or border4.png
             });
         }
 
@@ -304,9 +305,9 @@
             });
 
             // 3. Load and Draw the Event Border Overlay (if it exists)
-            const borderOverlay = await loadOverlayImage();
+            const borderOverlay = await loadOverlayImage(currentMode);
             if (borderOverlay) {
-                // Stretches the border.png exactly over the final canvas size
+                // Stretches the dynamic border exactly over the final canvas size
                 ctx.drawImage(borderOverlay, 0, 0, canvas.width, canvas.height);
             }
 
