@@ -136,7 +136,7 @@
             // Reset UI
             indicatorEl.classList.add('hidden-screen');
             controlsEl.classList.remove('hidden-screen');
-            cameraHomeBtn.classList.remove('hidden-screen'); // Show Home button
+            cameraHomeBtn.classList.remove('hidden-screen');
             
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -178,29 +178,21 @@
 
         // --- SEQUENCE ENGINE ---
         async function executeCaptureSequence() {
-            // Hide the controls and the Home button during the photo sequence
             controlsEl.classList.add('hidden-screen');
             cameraHomeBtn.classList.add('hidden-screen');
-            
             capturedRawPhotos = [];
             
-            // Show top indicator if 4 photos mode
             if (currentMode === 4) indicatorEl.classList.remove('hidden-screen');
 
             for (let i = 0; i < currentMode; i++) {
                 indicatorEl.innerText = `PHOTO ${i + 1} OF ${currentMode}`;
                 
-                // Wait for countdown
                 await runCountdown(5);
-                
-                // Flash effect
                 triggerFlash();
                 
-                // Capture raw frame
                 const frameData = captureRawFrame();
                 capturedRawPhotos.push(frameData);
                 
-                // Short pause before next countdown (unless it's the last photo)
                 if (i < currentMode - 1) {
                     await new Promise(resolve => setTimeout(resolve, 800));
                 }
@@ -208,7 +200,7 @@
 
             indicatorEl.classList.add('hidden-screen');
             
-            // Generate final layout
+            // Generate final layout with border
             finalComposedDataUrl = await composeTemplate();
             previewEl.src = finalComposedDataUrl;
             showScreen('preview');
@@ -235,7 +227,7 @@
 
         function triggerFlash() {
             flashEl.classList.remove('flash-active');
-            void flashEl.offsetWidth; // Trigger reflow to restart animation
+            void flashEl.offsetWidth; 
             flashEl.classList.add('flash-active');
         }
 
@@ -254,31 +246,39 @@
             return canvas.toDataURL('image/jpeg', 0.95);
         }
 
+        // --- OVERLAY LOADER ---
+        function loadOverlayImage() {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null); // Returns null if border.png is missing
+                img.src = 'border.png';
+            });
+        }
+
         // --- TEMPLATE COMPOSITION ENGINE ---
         async function composeTemplate() {
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Get actual camera resolution (usually 1920x1080)
             const w = videoEl.videoWidth || 1920;
             const h = videoEl.videoHeight || 1080;
-            const padding = 60; // White border thickness
+            const padding = 60; 
             
-            // Setup canvas size based on mode
+            // Setup canvas size
             if (currentMode === 1) {
                 canvas.width = w + (padding * 2);
                 canvas.height = h + (padding * 2);
             } else if (currentMode === 4) {
-                // 2x2 Grid Layout
                 canvas.width = (w * 2) + (padding * 3);
                 canvas.height = (h * 2) + (padding * 3);
             }
 
-            // Fill background with White
+            // 1. Draw Base Background (White)
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // Convert Base64 strings to drawable Image objects
+            // 2. Load and Draw the Captured Photos
             const loadedImages = await Promise.all(capturedRawPhotos.map(src => {
                 return new Promise(resolve => {
                     const img = new Image();
@@ -287,7 +287,6 @@
                 });
             }));
 
-            // Draw images into their template slots
             loadedImages.forEach((img, index) => {
                 let x = padding;
                 let y = padding;
@@ -303,6 +302,13 @@
                 
                 ctx.drawImage(img, x, y, w, h);
             });
+
+            // 3. Load and Draw the Event Border Overlay (if it exists)
+            const borderOverlay = await loadOverlayImage();
+            if (borderOverlay) {
+                // Stretches the border.png exactly over the final canvas size
+                ctx.drawImage(borderOverlay, 0, 0, canvas.width, canvas.height);
+            }
 
             return canvas.toDataURL('image/jpeg', 0.95);
         }
