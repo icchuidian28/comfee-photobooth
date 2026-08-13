@@ -33,7 +33,6 @@
         <h1 class="text-6xl font-bold tracking-widest mb-4">OUR SPECIAL EVENT</h1>
         <p class="text-2xl text-gray-400 mb-16">TOUCH A MODE TO START</p>
         
-        <!-- Adjusted for 2 buttons in landscape -->
         <div class="flex gap-16">
             <button onclick="startSession(1)" class="w-72 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
                 <span class="text-8xl font-black text-blue-500 mb-4">1</span>
@@ -50,31 +49,47 @@
     <div id="screen-camera" class="w-full h-full relative hidden-screen bg-black">
         <video id="camera-feed" class="w-full h-full object-cover mirror-feed" autoplay playsinline></video>
         
+        <!-- Back to Home Button (Top Left) -->
+        <button onclick="returnToHome()" id="camera-home-btn" class="absolute top-8 left-8 px-6 py-3 bg-black/60 backdrop-blur-md text-white font-bold text-xl rounded-full shadow-lg active:scale-95 transition-transform z-40 border-2 border-white/20">
+            ← HOME
+        </button>
+
         <!-- Status Indicator (Top Center) -->
-        <div id="sequence-indicator" class="absolute top-10 left-1/2 -translate-x-1/2 text-4xl font-black text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] hidden-screen tracking-widest bg-black/30 px-6 py-2 rounded-full">
+        <div id="sequence-indicator" class="absolute top-10 left-1/2 -translate-x-1/2 text-4xl font-black text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] hidden-screen tracking-widest bg-black/30 px-6 py-2 rounded-full z-40">
             PHOTO 1 OF 4
         </div>
 
         <!-- Small Countdown (Top Right Corner) -->
-        <div id="countdown-display" class="absolute top-10 right-12 text-8xl font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] hidden-screen">
+        <div id="countdown-display" class="absolute top-10 right-12 text-8xl font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] hidden-screen z-40">
             5
         </div>
 
         <!-- Camera Controls -->
-        <div id="camera-controls" class="absolute bottom-10 left-0 w-full flex justify-center gap-8">
-            <button onclick="showScreen('home'); stopCamera();" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">CANCEL</button>
-            <button onclick="executeCaptureSequence()" class="px-14 py-5 bg-blue-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">START SEQUENCE</button>
+        <div id="camera-controls" class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-40">
+            <button onclick="executeCaptureSequence()" class="px-16 py-6 bg-blue-600 text-white font-bold text-3xl rounded-xl cursor-pointer shadow-[0_10px_30px_rgba(37,99,235,0.5)] active:scale-95 transition-transform border-4 border-blue-400">
+                START SEQUENCE
+            </button>
         </div>
     </div>
 
     <!-- PREVIEW SCREEN -->
     <div id="screen-preview" class="w-full h-full relative hidden-screen flex flex-col items-center justify-center">
-        <!-- The composed final image preview (Scaled for landscape screens) -->
-        <img id="photo-preview" class="max-h-[75vh] max-w-[90vw] border-8 border-white shadow-2xl rounded-lg object-contain bg-white" />
+        <!-- Back to Home Button (Top Left) -->
+        <button onclick="returnToHome()" class="absolute top-8 left-8 px-6 py-3 bg-zinc-800/80 backdrop-blur-md text-white font-bold text-xl rounded-full shadow-lg active:scale-95 transition-transform z-40 border-2 border-zinc-600">
+            ← DISCARD & HOME
+        </button>
+
+        <!-- The composed final image preview -->
+        <img id="photo-preview" class="max-h-[75vh] max-w-[90vw] border-8 border-white shadow-2xl rounded-lg object-contain bg-white z-10" />
         
-        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8">
-            <button onclick="showScreen('camera')" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">RETAKE</button>
-            <button onclick="saveFinalPhoto()" class="px-14 py-5 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">SAVE & FINISH</button>
+        <!-- Bottom Controls -->
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8 z-40">
+            <button onclick="showScreen('camera')" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform border-2 border-zinc-600">
+                RETAKE
+            </button>
+            <button onclick="saveFinalPhoto()" class="px-14 py-5 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-[0_10px_30px_rgba(22,163,74,0.5)] active:scale-95 transition-transform border-4 border-green-400">
+                SAVE & FINISH
+            </button>
         </div>
     </div>
 
@@ -93,6 +108,7 @@
         const countdownEl = document.getElementById('countdown-display');
         const indicatorEl = document.getElementById('sequence-indicator');
         const controlsEl = document.getElementById('camera-controls');
+        const cameraHomeBtn = document.getElementById('camera-home-btn');
         const flashEl = document.getElementById('flash-overlay');
         
         let currentStream = null;
@@ -106,6 +122,12 @@
             screens[screenId].classList.remove('hidden-screen');
         }
 
+        // Properly cleans up and goes back to the main menu
+        function returnToHome() {
+            stopCamera();
+            showScreen('home');
+        }
+
         // --- CAMERA INITIATION ---
         async function startSession(mode) {
             currentMode = mode;
@@ -114,6 +136,7 @@
             // Reset UI
             indicatorEl.classList.add('hidden-screen');
             controlsEl.classList.remove('hidden-screen');
+            cameraHomeBtn.classList.remove('hidden-screen'); // Show Home button
             
             try {
                 const devices = await navigator.mediaDevices.enumerateDevices();
@@ -155,7 +178,10 @@
 
         // --- SEQUENCE ENGINE ---
         async function executeCaptureSequence() {
+            // Hide the controls and the Home button during the photo sequence
             controlsEl.classList.add('hidden-screen');
+            cameraHomeBtn.classList.add('hidden-screen');
+            
             capturedRawPhotos = [];
             
             // Show top indicator if 4 photos mode
@@ -292,8 +318,7 @@
             link.click();
             document.body.removeChild(link);
             
-            stopCamera();
-            showScreen('home');
+            returnToHome();
         }
     </script>
 </body>
