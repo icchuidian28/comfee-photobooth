@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- Lock zooming and scaling for Kiosk mode -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Event Photobooth</title>
+    
+    <!-- Load Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <style>
+        /* Strict Kiosk Styling */
+        * { user-select: none; touch-action: none; box-sizing: border-box; }
+        body { background-color: #000; color: #fff; overflow: hidden; font-family: system-ui, sans-serif; }
+        .hidden-screen { display: none !important; }
+        
+        /* Mirror front camera, but keep external cameras normal */
+        .mirror-feed { transform: scaleX(-1); }
+    </style>
+</head>
+<body class="w-screen h-screen flex flex-col items-center justify-center">
+
+    <!-- HOME SCREEN -->
+    <div id="screen-home" class="w-full h-full flex flex-col items-center justify-center relative">
+        <h1 class="text-6xl font-bold tracking-widest mb-4">OUR SPECIAL EVENT</h1>
+        <p class="text-2xl text-gray-400 mb-16">TOUCH A MODE TO START</p>
+        
+        <div class="flex gap-8">
+            <button onclick="openCamera(1)" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer">
+                <span class="text-7xl font-black text-blue-500 mb-4">1</span>
+                <span class="text-xl font-bold">SINGLE PHOTO</span>
+            </button>
+            <!-- Phase 2 Button Setup (Disabled for now) -->
+            <button class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center opacity-50 pointer-events-none">
+                <span class="text-7xl font-black text-zinc-500 mb-4">2</span>
+                <span class="text-xl font-bold">TWO PHOTOS</span>
+                <span class="text-sm text-zinc-500 mt-2">(Phase 2)</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- CAMERA SCREEN -->
+    <div id="screen-camera" class="w-full h-full relative hidden-screen bg-black">
+        <video id="camera-feed" class="w-full h-full object-cover mirror-feed" autoplay playsinline></video>
+        
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-6">
+            <button onclick="showScreen('home'); stopCamera();" class="px-8 py-4 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer">CANCEL</button>
+            <button onclick="capturePhoto()" class="px-12 py-4 bg-blue-600 text-white font-bold text-2xl rounded-xl cursor-pointer">CAPTURE</button>
+        </div>
+    </div>
+
+    <!-- PREVIEW SCREEN -->
+    <div id="screen-preview" class="w-full h-full relative hidden-screen flex flex-col items-center justify-center">
+        <!-- The captured image preview -->
+        <img id="photo-preview" class="max-h-[70vh] border-8 border-white shadow-2xl rounded-lg" />
+        
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-6">
+            <button onclick="showScreen('camera')" class="px-8 py-4 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer">RETAKE</button>
+            <button onclick="savePhoto()" class="px-12 py-4 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer">SAVE & FINISH</button>
+        </div>
+    </div>
+
+    <script>
+        // --- UI & ELEMENT REFERENCES ---
+        const screens = {
+            home: document.getElementById('screen-home'),
+            camera: document.getElementById('screen-camera'),
+            preview: document.getElementById('screen-preview')
+        };
+        const videoEl = document.getElementById('camera-feed');
+        const previewEl = document.getElementById('photo-preview');
+        
+        let currentStream = null;
+        let capturedDataUrl = null;
+
+        // Switches between Home, Camera, and Preview UI
+        function showScreen(screenId) {
+            Object.values(screens).forEach(s => s.classList.add('hidden-screen'));
+            screens[screenId].classList.remove('hidden-screen');
+        }
+
+        // --- CAMERA STREAMING LOGIC ---
+        async function openCamera(mode) {
+            try {
+                // Request list of cameras
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const videoDevices = devices.filter(d => d.kind === 'videoinput');
+                
+                // Default to the front-facing tablet camera
+                let constraint = { facingMode: "user" }; 
+
+                // Attempt to auto-detect the DJI Osmo Pocket 3 or other UVC cameras
+                const externalCamera = videoDevices.find(d => 
+                    d.label.toLowerCase().includes('usb') || 
+                    d.label.toLowerCase().includes('uvc') ||
+                    d.label.toLowerCase().includes('dji')
+                );
+
+                if (externalCamera) {
+                    constraint = { deviceId: { exact: externalCamera.deviceId } };
+                    videoEl.classList.remove('mirror-feed'); // Do not mirror external webcams
+                } else {
+                    videoEl.classList.add('mirror-feed'); // Mirror tablet front camera
+                }
+
+                // Request camera access and stream it to the <video> element
+                currentStream = await navigator.mediaDevices.getUserMedia({
+                    video: { ...constraint, width: { ideal: 1920 }, height: { ideal: 1080 } },
+                    audio: false
+                });
+
+                videoEl.srcObject = currentStream;
+                showScreen('camera');
+            } catch (err) {
+                alert("Camera access denied or device missing. Please allow camera permissions in Chrome.");
+                console.error("Camera Error:", err);
+            }
+        }
+
+        function stopCamera() {
+            if (currentStream) {
+                currentStream.getTracks().forEach(track => track.stop());
+                currentStream = null;
+            }
+        }
+
+        // --- CAPTURE & DOWNLOAD LOGIC ---
+        function capturePhoto() {
+            // Create an invisible canvas to draw the current video frame
+            const canvas = document.createElement('canvas');
+            canvas.width = videoEl.videoWidth;
+            canvas.height = videoEl.videoHeight;
+            const ctx = canvas.getContext('2d');
+            
+            // If the video is mirrored (tablet front camera), mirror the saved image too
+            if (videoEl.classList.contains('mirror-feed')) {
+                ctx.translate(canvas.width, 0);
+                ctx.scale(-1, 1);
+            }
+            
+            // Draw the video frame to the canvas
+            ctx.drawImage(videoEl, 0, 0, canvas.width, canvas.height);
+            
+            // Convert to high-quality JPEG
+            capturedDataUrl = canvas.toDataURL('image/jpeg', 0.95);
+            
+            // Show the preview UI
+            previewEl.src = capturedDataUrl;
+            showScreen('preview');
+        }
+
+        function savePhoto() {
+            // Generate a filename based on the current time
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            
+            // Create a temporary link element to trigger the browser's download manager
+            const link = document.createElement('a');
+            link.href = capturedDataUrl;
+            link.download = `photobooth_${timestamp}.jpg`;
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            // Clean up and return to the start screen
+            stopCamera();
+            showScreen('home');
+        }
+    </script>
+</body>
+</html>
