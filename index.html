@@ -1,9 +1,8 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Lock zooming and scaling for Kiosk mode -->
+    <!-- Lock zooming and scaling for Kiosk mode, optimized for tablet landscape -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Event Photobooth</title>
     
@@ -34,18 +33,15 @@
         <h1 class="text-6xl font-bold tracking-widest mb-4">OUR SPECIAL EVENT</h1>
         <p class="text-2xl text-gray-400 mb-16">TOUCH A MODE TO START</p>
         
-        <div class="flex gap-8">
-            <button onclick="startSession(1)" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer">
-                <span class="text-7xl font-black text-blue-500 mb-4">1</span>
-                <span class="text-xl font-bold">SINGLE PHOTO</span>
+        <!-- Adjusted for 2 buttons in landscape -->
+        <div class="flex gap-16">
+            <button onclick="startSession(1)" class="w-72 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
+                <span class="text-8xl font-black text-blue-500 mb-4">1</span>
+                <span class="text-2xl font-bold tracking-wide">SINGLE PHOTO</span>
             </button>
-            <button onclick="startSession(2)" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer">
-                <span class="text-7xl font-black text-blue-500 mb-4">2</span>
-                <span class="text-xl font-bold">TWO PHOTOS</span>
-            </button>
-            <button onclick="startSession(4)" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer">
-                <span class="text-7xl font-black text-blue-500 mb-4">4</span>
-                <span class="text-xl font-bold">FOUR PHOTOS</span>
+            <button onclick="startSession(4)" class="w-72 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
+                <span class="text-8xl font-black text-blue-500 mb-4">4</span>
+                <span class="text-2xl font-bold tracking-wide">FOUR PHOTOS</span>
             </button>
         </div>
     </div>
@@ -54,31 +50,31 @@
     <div id="screen-camera" class="w-full h-full relative hidden-screen bg-black">
         <video id="camera-feed" class="w-full h-full object-cover mirror-feed" autoplay playsinline></video>
         
-        <!-- Status Indicator (e.g. "PHOTO 1 OF 4") -->
-        <div id="sequence-indicator" class="absolute top-12 w-full text-center text-4xl font-black text-white drop-shadow-[0_4px_4px_rgba(0,0,0,0.8)] hidden-screen">
+        <!-- Status Indicator (Top Center) -->
+        <div id="sequence-indicator" class="absolute top-10 left-1/2 -translate-x-1/2 text-4xl font-black text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] hidden-screen tracking-widest bg-black/30 px-6 py-2 rounded-full">
             PHOTO 1 OF 4
         </div>
 
-        <!-- Giant Countdown Number -->
-        <div id="countdown-display" class="absolute inset-0 flex items-center justify-center text-[25rem] font-black text-white drop-shadow-[0_10px_20px_rgba(0,0,0,0.8)] hidden-screen">
+        <!-- Small Countdown (Top Right Corner) -->
+        <div id="countdown-display" class="absolute top-10 right-12 text-8xl font-black text-white drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)] hidden-screen">
             5
         </div>
 
         <!-- Camera Controls -->
-        <div id="camera-controls" class="absolute bottom-10 left-0 w-full flex justify-center gap-6">
-            <button onclick="showScreen('home'); stopCamera();" class="px-8 py-4 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer">CANCEL</button>
-            <button onclick="executeCaptureSequence()" class="px-12 py-4 bg-blue-600 text-white font-bold text-2xl rounded-xl cursor-pointer">START SEQUENCE</button>
+        <div id="camera-controls" class="absolute bottom-10 left-0 w-full flex justify-center gap-8">
+            <button onclick="showScreen('home'); stopCamera();" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">CANCEL</button>
+            <button onclick="executeCaptureSequence()" class="px-14 py-5 bg-blue-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">START SEQUENCE</button>
         </div>
     </div>
 
     <!-- PREVIEW SCREEN -->
     <div id="screen-preview" class="w-full h-full relative hidden-screen flex flex-col items-center justify-center">
-        <!-- The composed final image preview -->
+        <!-- The composed final image preview (Scaled for landscape screens) -->
         <img id="photo-preview" class="max-h-[75vh] max-w-[90vw] border-8 border-white shadow-2xl rounded-lg object-contain bg-white" />
         
-        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-6">
-            <button onclick="showScreen('camera')" class="px-8 py-4 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer">RETAKE</button>
-            <button onclick="saveFinalPhoto()" class="px-12 py-4 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer">SAVE & FINISH</button>
+        <div class="absolute bottom-10 left-0 w-full flex justify-center gap-8">
+            <button onclick="showScreen('camera')" class="px-10 py-5 bg-zinc-800 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">RETAKE</button>
+            <button onclick="saveFinalPhoto()" class="px-14 py-5 bg-green-600 text-white font-bold text-2xl rounded-xl cursor-pointer shadow-lg active:scale-95 transition-transform">SAVE & FINISH</button>
         </div>
     </div>
 
@@ -100,7 +96,7 @@
         const flashEl = document.getElementById('flash-overlay');
         
         let currentStream = null;
-        let currentMode = 1; // 1, 2, or 4
+        let currentMode = 1; // 1 or 4
         let capturedRawPhotos = []; // Stores individual frames
         let finalComposedDataUrl = null; // Stores the final template
 
@@ -162,8 +158,8 @@
             controlsEl.classList.add('hidden-screen');
             capturedRawPhotos = [];
             
-            // Show top indicator if more than 1 photo
-            if (currentMode > 1) indicatorEl.classList.remove('hidden-screen');
+            // Show top indicator if 4 photos mode
+            if (currentMode === 4) indicatorEl.classList.remove('hidden-screen');
 
             for (let i = 0; i < currentMode; i++) {
                 indicatorEl.innerText = `PHOTO ${i + 1} OF ${currentMode}`;
@@ -178,7 +174,7 @@
                 const frameData = captureRawFrame();
                 capturedRawPhotos.push(frameData);
                 
-                // Short pause before next countdown
+                // Short pause before next countdown (unless it's the last photo)
                 if (i < currentMode - 1) {
                     await new Promise(resolve => setTimeout(resolve, 800));
                 }
@@ -246,12 +242,8 @@
             if (currentMode === 1) {
                 canvas.width = w + (padding * 2);
                 canvas.height = h + (padding * 2);
-            } else if (currentMode === 2) {
-                // Vertical Stack
-                canvas.width = w + (padding * 2);
-                canvas.height = (h * 2) + (padding * 3);
             } else if (currentMode === 4) {
-                // 2x2 Grid
+                // 2x2 Grid Layout
                 canvas.width = (w * 2) + (padding * 3);
                 canvas.height = (h * 2) + (padding * 3);
             }
@@ -274,9 +266,7 @@
                 let x = padding;
                 let y = padding;
                 
-                if (currentMode === 2) {
-                    if (index === 1) y = (padding * 2) + h;
-                } else if (currentMode === 4) {
+                if (currentMode === 4) {
                     if (index === 1) x = (padding * 2) + w;
                     if (index === 2) y = (padding * 2) + h;
                     if (index === 3) { 
@@ -308,5 +298,3 @@
     </script>
 </body>
 </html>
-
-
