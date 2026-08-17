@@ -31,12 +31,25 @@
     <!-- HOME SCREEN -->
     <div id="screen-home" class="w-full h-full flex flex-col items-center justify-center relative">
         <h1 class="text-6xl font-bold tracking-widest mb-4">OUR SPECIAL EVENT</h1>
-        <p class="text-2xl text-gray-400 mb-16">TOUCH TO START</p>
+        <p class="text-2xl text-gray-400 mb-12">TOUCH A MODE TO START</p>
         
-        <div class="flex gap-16">
-            <button onclick="startSession(3)" class="w-72 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
-                <span class="text-8xl font-black text-blue-500 mb-4">3</span>
-                <span class="text-2xl font-bold tracking-wide">START</span>
+        <div class="flex gap-8 justify-center flex-wrap max-w-6xl">
+            <!-- 3 Photos: Grid -->
+            <button onclick="startSession('3-grid')" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
+                <span class="text-7xl font-black text-blue-500 mb-2">3</span>
+                <span class="text-xl font-bold tracking-wide text-center">3 PHOTOS<br/><span class="text-sm text-gray-400 font-normal">Grid Layout</span></span>
+            </button>
+            
+            <!-- 4 Photos: Center Large -->
+            <button onclick="startSession('4-center')" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
+                <span class="text-7xl font-black text-blue-500 mb-2">4</span>
+                <span class="text-xl font-bold tracking-wide text-center">4 PHOTOS<br/><span class="text-sm text-gray-400 font-normal">Center Large</span></span>
+            </button>
+
+            <!-- 4 Photos: Left Large -->
+            <button onclick="startSession('4-left')" class="w-64 h-80 bg-zinc-900 border-4 border-zinc-700 rounded-3xl flex flex-col items-center justify-center active:bg-zinc-800 active:border-blue-500 transition-all cursor-pointer shadow-xl hover:scale-105">
+                <span class="text-7xl font-black text-blue-500 mb-2">4</span>
+                <span class="text-xl font-bold tracking-wide text-center">4 PHOTOS<br/><span class="text-sm text-gray-400 font-normal">Left Large</span></span>
             </button>
         </div>
     </div>
@@ -52,7 +65,7 @@
 
         <!-- Status Indicator (Top Center) -->
         <div id="sequence-indicator" class="absolute top-10 left-1/2 -translate-x-1/2 text-4xl font-black text-white drop-shadow-[0_4px_6px_rgba(0,0,0,0.8)] hidden-screen tracking-widest bg-black/30 px-6 py-2 rounded-full z-40">
-            PHOTO 1 OF 3
+            PHOTO 1
         </div>
 
         <!-- Small Countdown (Top Right Corner) -->
@@ -94,6 +107,42 @@
     <div id="flash-overlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-50"></div>
 
     <script>
+        // --- LAYOUT ENGINE CONFIGURATION ---
+        const LAYOUTS = {
+            '3-grid': {
+                mode: 3,
+                width: 4020,
+                height: 2340,
+                slots: [
+                    { x: 60, y: 60, w: 1920, h: 1080 },
+                    { x: 2040, y: 60, w: 1920, h: 1080 },
+                    { x: 60, y: 1200, w: 1920, h: 1080 }
+                ]
+            },
+            '4-center': {
+                mode: 4,
+                width: 1920,
+                height: 1280, // Standard 3:2 print ratio (e.g. 4x6 print)
+                slots: [
+                    { x: 448, y: 80, w: 1024, h: 576 }, // Center Top Large
+                    { x: 60, y: 720, w: 560, h: 315 },  // Bottom Left
+                    { x: 680, y: 720, w: 560, h: 315 }, // Bottom Middle
+                    { x: 1300, y: 720, w: 560, h: 315 } // Bottom Right
+                ]
+            },
+            '4-left': {
+                mode: 4,
+                width: 1920,
+                height: 1280,
+                slots: [
+                    { x: 60, y: 80, w: 1024, h: 576 },  // Left Top Large
+                    { x: 60, y: 720, w: 560, h: 315 },  // Bottom Left
+                    { x: 680, y: 720, w: 560, h: 315 }, // Bottom Middle
+                    { x: 1300, y: 720, w: 560, h: 315 } // Bottom Right
+                ]
+            }
+        };
+
         // --- UI & STATE REFERENCES ---
         const screens = {
             home: document.getElementById('screen-home'),
@@ -109,9 +158,9 @@
         const flashEl = document.getElementById('flash-overlay');
         
         let currentStream = null;
-        let currentMode = 3; // Hardcoded to 3 now
-        let capturedRawPhotos = []; // Stores individual frames
-        let finalComposedDataUrl = null; // Stores the final template
+        let activeLayoutKey = '3-grid'; 
+        let capturedRawPhotos = []; 
+        let finalComposedDataUrl = null; 
 
         // Switches between UI screens
         function showScreen(screenId) {
@@ -119,15 +168,14 @@
             screens[screenId].classList.remove('hidden-screen');
         }
 
-        // Properly cleans up and goes back to the main menu
         function returnToHome() {
             stopCamera();
             showScreen('home');
         }
 
         // --- CAMERA INITIATION ---
-        async function startSession(mode) {
-            currentMode = mode;
+        async function startSession(layoutKey) {
+            activeLayoutKey = layoutKey;
             capturedRawPhotos = [];
             
             // Reset UI
@@ -179,10 +227,11 @@
             cameraHomeBtn.classList.add('hidden-screen');
             capturedRawPhotos = [];
             
-            if (currentMode === 3) indicatorEl.classList.remove('hidden-screen');
+            const layout = LAYOUTS[activeLayoutKey];
+            indicatorEl.classList.remove('hidden-screen');
 
-            for (let i = 0; i < currentMode; i++) {
-                indicatorEl.innerText = `PHOTO ${i + 1} OF ${currentMode}`;
+            for (let i = 0; i < layout.mode; i++) {
+                indicatorEl.innerText = `PHOTO ${i + 1} OF ${layout.mode}`;
                 
                 await runCountdown(5);
                 triggerFlash();
@@ -190,7 +239,7 @@
                 const frameData = captureRawFrame();
                 capturedRawPhotos.push(frameData);
                 
-                if (i < currentMode - 1) {
+                if (i < layout.mode - 1) {
                     await new Promise(resolve => setTimeout(resolve, 800));
                 }
             }
@@ -243,31 +292,34 @@
             return canvas.toDataURL('image/jpeg', 0.95);
         }
 
-        // --- BACKGROUND LOADER ---
-        function loadBackgroundImage() {
+        // --- BACKGROUND SMART LOADER ---
+        function loadBackgroundImage(layoutKey) {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.onload = () => resolve(img);
-                img.onerror = () => resolve(null); // Fails silently if background.png is missing
-                img.src = 'background.png'; 
+                img.onerror = () => {
+                    // Fallback to standard background.png if specific layout background doesn't exist
+                    const fallbackImg = new Image();
+                    fallbackImg.onload = () => resolve(fallbackImg);
+                    fallbackImg.onerror = () => resolve(null);
+                    fallbackImg.src = 'background.png';
+                };
+                img.src = `background-${layoutKey}.png`; // Tries e.g. background-4-center.png first
             });
         }
 
-        // --- TEMPLATE COMPOSITION ENGINE ---
+        // --- DYNAMIC COMPOSITION ENGINE ---
         async function composeTemplate() {
+            const layout = LAYOUTS[activeLayoutKey];
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            const w = videoEl.videoWidth || 1920;
-            const h = videoEl.videoHeight || 1080;
-            const padding = 60; 
-            
-            // Setup canvas size (Always uses the 2x2 grid size for 3 photos)
-            canvas.width = (w * 2) + (padding * 3);
-            canvas.height = (h * 2) + (padding * 3);
+            // Set canvas size from layout configuration
+            canvas.width = layout.width;
+            canvas.height = layout.height;
 
-            // 1. Load and Draw the Background (background.png or default white)
-            const bgImage = await loadBackgroundImage();
+            // 1. Draw the Background
+            const bgImage = await loadBackgroundImage(activeLayoutKey);
             if (bgImage) {
                 ctx.drawImage(bgImage, 0, 0, canvas.width, canvas.height);
             } else {
@@ -275,7 +327,7 @@
                 ctx.fillRect(0, 0, canvas.width, canvas.height);
             }
 
-            // 2. Load and Draw the Captured Photos
+            // 2. Load and Draw the Captured Photos into their designated slots
             const loadedImages = await Promise.all(capturedRawPhotos.map(src => {
                 return new Promise(resolve => {
                     const img = new Image();
@@ -285,24 +337,10 @@
             }));
 
             loadedImages.forEach((img, index) => {
-                let x = padding;
-                let y = padding;
-                
-                if (index === 0) { // Photo 1: Top Left
-                    x = padding;
-                    y = padding;
+                const slot = layout.slots[index];
+                if(slot) {
+                    ctx.drawImage(img, slot.x, slot.y, slot.w, slot.h);
                 }
-                if (index === 1) { // Photo 2: Top Right
-                    x = (padding * 2) + w;
-                    y = padding;
-                }
-                if (index === 2) { // Photo 3: Bottom Left
-                    x = padding; 
-                    y = (padding * 2) + h; 
-                }
-                // Bottom Right is intentionally skipped for the background design
-                
-                ctx.drawImage(img, x, y, w, h);
             });
 
             return canvas.toDataURL('image/jpeg', 0.95);
