@@ -107,38 +107,38 @@
     <div id="flash-overlay" class="absolute inset-0 bg-white opacity-0 pointer-events-none z-50"></div>
 
     <script>
-        // --- LAYOUT ENGINE CONFIGURATION ---
+        // --- LAYOUT ENGINE CONFIGURATION (Standard 4R Size: 1800x1200px) ---
         const LAYOUTS = {
             '3-grid': {
                 mode: 3,
-                width: 4020,
-                height: 2340,
+                width: 1800,
+                height: 1200,
                 slots: [
-                    { x: 60, y: 60, w: 1920, h: 1080 },
-                    { x: 2040, y: 60, w: 1920, h: 1080 },
-                    { x: 60, y: 1200, w: 1920, h: 1080 }
+                    { x: 35, y: 82, w: 848, h: 477 }, // Top Left
+                    { x: 917, y: 82, w: 848, h: 477 }, // Top Right
+                    { x: 35, y: 641, w: 848, h: 477 }  // Bottom Left
                 ]
             },
             '4-center': {
                 mode: 4,
-                width: 1920,
-                height: 1280, // Standard 3:2 print ratio (e.g. 4x6 print)
+                width: 1800,
+                height: 1200,
                 slots: [
-                    { x: 448, y: 80, w: 1024, h: 576 }, // Center Top Large
-                    { x: 60, y: 720, w: 560, h: 315 },  // Bottom Left
-                    { x: 680, y: 720, w: 560, h: 315 }, // Bottom Middle
-                    { x: 1300, y: 720, w: 560, h: 315 } // Bottom Right
+                    { x: 420, y: 60, w: 960, h: 540 }, // Center Top Large
+                    { x: 42, y: 700, w: 544, h: 306 },  // Bottom Left
+                    { x: 628, y: 700, w: 544, h: 306 }, // Bottom Middle
+                    { x: 1214, y: 700, w: 544, h: 306 } // Bottom Right
                 ]
             },
             '4-left': {
                 mode: 4,
-                width: 1920,
-                height: 1280,
+                width: 1800,
+                height: 1200,
                 slots: [
-                    { x: 60, y: 80, w: 1024, h: 576 },  // Left Top Large
-                    { x: 60, y: 720, w: 560, h: 315 },  // Bottom Left
-                    { x: 680, y: 720, w: 560, h: 315 }, // Bottom Middle
-                    { x: 1300, y: 720, w: 560, h: 315 } // Bottom Right
+                    { x: 42, y: 60, w: 960, h: 540 },  // Left Top Large
+                    { x: 42, y: 700, w: 544, h: 306 },  // Bottom Left
+                    { x: 628, y: 700, w: 544, h: 306 }, // Bottom Middle
+                    { x: 1214, y: 700, w: 544, h: 306 } // Bottom Right
                 ]
             }
         };
@@ -314,7 +314,7 @@
             const canvas = document.createElement('canvas');
             const ctx = canvas.getContext('2d');
             
-            // Set canvas size from layout configuration
+            // Set canvas size from layout configuration (1800x1200)
             canvas.width = layout.width;
             canvas.height = layout.height;
 
@@ -343,7 +343,7 @@
                 }
             });
 
-            return canvas.toDataURL('image/jpeg', 0.95);
+            return canvas.toDataURL('image/jpeg', 1.0); // Maximum quality for printing
         }
 
         // --- FINAL SAVE ---
